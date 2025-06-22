@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import random
 
 app = Flask(__name__)
 
@@ -11,10 +12,26 @@ def webhook():
     req = request.get_json()
     tag = req.get('fulfillmentInfo', {}).get('tag', '')
 
-    if tag == 'static_reply':
-        response_text = "Thanks, your request has been received. Our team will contact you shortly."
+    # Only handle the 'create_ticket' tag
+    if tag == 'create_ticket':
+        params = req.get('sessionInfo', {}).get('parameters', {})
+
+        category = params.get('category', 'N/A')
+        subcategory = params.get('subcategory', 'N/A')
+        justification = params.get('justification', 'N/A')
+
+        # Simulate ticket ID
+        ticket_id = f"SR-{random.randint(1000, 9999)}"
+
+        response_text = (
+            f"✅ Ticket Created!\n"
+            f"🧾 Ticket ID: {ticket_id}\n"
+            f"📁 Category: {category}\n"
+            f"📂 Sub-category: {subcategory}\n"
+            f"📝 Justification: {justification}"
+        )
     else:
-        response_text = "Sorry, I didn’t understand your request."
+        response_text = "Sorry, I didn’t recognize the request."
 
     return jsonify({
         "fulfillment_response": {
