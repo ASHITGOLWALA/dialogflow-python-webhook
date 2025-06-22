@@ -3,43 +3,54 @@ import random
 
 app = Flask(__name__)
 
-@app.route("/webhook", methods=["POST"])
+@app.route('/webhook', methods=['POST'])
 def webhook():
-    # Ensure the content type is correct (optional but good practice)
-    if request.content_type != 'application/json':
-        return jsonify({"error": "Invalid content type"}), 400
+    req = request.get_json()
 
-    # Parse request
-    req = request.get_json(force=True)
+    # Extract session parameters
     session_params = req.get("sessionInfo", {}).get("parameters", {})
 
-    # Extract parameters
+    # Safely retrieve values
     category = session_params.get("category", "N/A")
-    subcategory = session_params.get("subcategory_hw", "N/A")
+    subcategory_hw = session_params.get("subcategory_hw")
+    subcategory_sw = session_params.get("subcategory_sw")
+    
+    # Use subcategory based on category
+    if category == "hardware":
+        subcategory = subcategory_hw or "N/A"
+    elif category == "software":
+        subcategory = subcategory_sw or "N/A"
+    else:
+        subcategory = "N/A"
 
-    # Simulate ticket creation
-    ticket_id = "SR-" + str(random.randint(1000, 9999))
+    # Generate ticket ID
+    ticket_id = f"SR-{random.randint(1000, 9999)}"
 
-    # Compose response
-    fulfillment_text = f"""✅ Ticket Created!
-🧾 Ticket ID: {ticket_id}
-📁 Category: {category}
-📂 Sub-category: {subcategory}
-"""
+    # Create response text
+    response_text = (
+        f"✅ Ticket Created!\n"
+        f"🧾 Ticket ID: {ticket_id}\n"
+        f"📁 Category: {category}\n"
+        f"📂 Sub-category: {subcategory}"
+    )
 
-    # Return fulfillment response in Dialogflow CX expected format
+    # Return the response
     return jsonify({
         "fulfillment_response": {
             "messages": [
                 {
                     "text": {
-                        "text": [fulfillment_text]
+                        "text": ["Here are the details:"]
+                    }
+                },
+                {
+                    "text": {
+                        "text": [response_text]
                     }
                 }
             ]
         }
     })
 
-# Main entry point
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+if __name__ == '__main__':
+    app.run(debug=True)
