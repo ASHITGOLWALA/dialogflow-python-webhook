@@ -1,44 +1,45 @@
 from flask import Flask, request, jsonify
+import random
 
 app = Flask(__name__)
 
-@app.route('/')
-def home():
-    return "Webhook is live! Use POST /webhook"
-
-@app.route('/webhook', methods=['POST'])
+@app.route("/webhook", methods=["POST"])
 def webhook():
-    req = request.get_json()
-    tag = req.get('fulfillmentInfo', {}).get('tag', '')
-    params = req.get('sessionInfo', {}).get('parameters', {})
+    # Ensure the content type is correct (optional but good practice)
+    if request.content_type != 'application/json':
+        return jsonify({"error": "Invalid content type"}), 400
 
-    if tag == 'create_ticket':
-        category = params.get("category", "Not provided")
-        subcategory = params.get("subcategory_hw") or params.get("subcategory_sw") or "Not provided"
-        justification = params.get("justification", "Not provided")
-        ticket_id = "SR-" + str(7000 + int.from_bytes(os.urandom(2), "big") % 1000)  # random ticket ID
+    # Parse request
+    req = request.get_json(force=True)
+    session_params = req.get("sessionInfo", {}).get("parameters", {})
 
-        response_text = (
-            f"✅ Ticket Created!\n"
-            f"🧾 Ticket ID: {ticket_id}\n"
-            f"📁 Category: {category}\n"
-            f"📂 Sub-category: {subcategory}\n"
-            f"📝 Justification: {justification}"
-        )
-    else:
-        response_text = "Sorry, I didn’t understand your request."
+    # Extract parameters
+    category = session_params.get("category", "N/A")
+    subcategory = session_params.get("subcategory_hw", "N/A")
 
+    # Simulate ticket creation
+    ticket_id = "SR-" + str(random.randint(1000, 9999))
+
+    # Compose response
+    fulfillment_text = f"""✅ Ticket Created!
+🧾 Ticket ID: {ticket_id}
+📁 Category: {category}
+📂 Sub-category: {subcategory}
+"""
+
+    # Return fulfillment response in Dialogflow CX expected format
     return jsonify({
         "fulfillment_response": {
             "messages": [
                 {
                     "text": {
-                        "text": [response_text]
+                        "text": [fulfillment_text]
                     }
                 }
             ]
         }
     })
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+# Main entry point
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
